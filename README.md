@@ -126,15 +126,3 @@ The **Streamlit** app will feature two pages:
 Both pages will integrate **MLflow** for model management and tracking.
 
 ---
-
-## Timeline:
-Check your mail for the submission deadline.
-
----
-
-## How to Run the Project:
-
-1. **Clone the repository**:
-   ```bash
-   git clone <repository_link>
-
