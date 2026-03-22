@@ -1,0 +1,10 @@
+#requirements.txt
+pandas
+numpy
+scikit-learn
+streamlit
+mlflow
+xgboost
+matplotlib
+seaborn
+joblib
