@@ -1,69 +1,219 @@
-# Flight Price and Customer Satisfaction Prediction Project
+## Flight Price & Customer Satisfaction Prediction App
 
-This project involves two predictive models for the travel and customer experience domains:
+## Project Overview
 
-1. **Flight Price Prediction (Regression Model)**
-2. **Customer Satisfaction Prediction (Classification Model)**
+This project is an **end-to-end Machine Learning application** that includes:
 
-Both models are deployed via a **Streamlit** application for interactive data analysis and predictions, integrated with **MLflow** for model tracking and management.
+1. **Flight Price Prediction (Regression)**
+2. **Customer Satisfaction Prediction (Classification)**
+
+The application is built using **Python, Scikit-learn, MLflow, and Streamlit**, and demonstrates the complete ML lifecycle:
+
+* Data preprocessing
+* Feature engineering
+* Model training
+* Experiment tracking
+* Deployment
 
 ---
+
+## Features
+
+### Flight Price Prediction
+
+* Predicts flight ticket prices based on:
+
+  * Airline, Source, Destination
+  * Journey date
+  * Departure & arrival time
+  * Duration and number of stops
+* Includes EDA visualizations:
+
+  * Price distribution
+  * Airline vs price
+  * Stops vs price
+
+---
+
+### Customer Satisfaction Prediction
+
+* Predicts whether a customer is:
+
+  * **Satisfied**
+  * **Dissatisfied**
+* Based on:
+
+  * Demographics
+  * Travel details
+  * Service ratings
+  * Delay times
+* Includes insights:
+
+  * Satisfaction distribution
+  * Class vs satisfaction
+  * Delay vs satisfaction
+
+---
+
+## Machine Learning Workflow
+
+### 🔹 Data Preprocessing
+
+* Removed irrelevant columns (`id`, index columns)
+* Handled missing values
+* Converted date/time into numerical features
+* Cleaned and standardized dataset
+
+---
+
+### Feature Engineering
+
+#### Flight Dataset:
+
+* Journey Day, Month, Year
+* Departure & Arrival Hour
+* Duration in minutes
+* Route start/end
+* Total stops
+
+#### Customer Dataset:
+
+* Total Service Score
+* Age Group categorization
+
+---
+
+### Models Used
+
+#### Regression (Flight Price)
+
+* Linear Regression
+* Random Forest Regressor
+* XGBoost Regressor
+
+#### Classification (Customer Satisfaction)
+
+* Logistic Regression
+* Decision Tree
+* Random Forest
+* Gradient Boosting
+* KNN
+* XGBoost
+
+---
+
+### Model Selection
+
+* Used **Cross Validation**
+* Compared models using:
+
+  * Accuracy
+  * F1-score
+
+* Selected **best performing model**
+
+---
+
+## MLflow Integration
+
+* Logged:
+
+  * Parameters
+  * Metrics (Accuracy, F1-score, etc.)
+  * Confusion Matrix (as artifacts)
+* Tracked experiments
+* Registered best model in **Model Registry**
+
+---
+
+## 💻 Streamlit Application
+
+* Single app with **two projects**
+* Sidebar navigation for switching
+* Interactive UI with:
+
+  * User inputs
+  * Real-time predictions
+  * Visual insights
+
+---
+
 ## Project Structure
 
-flight_customer_project/
+```
+flight_customer_app/
 │
-├── app.py                          # Main Streamlit app (both projects)
-├── flight.py                       # Streamlt app for flight_price
-├── customer.py                     # Streamlt app for passenger_satisfaction  
-│
+├── app.py
 ├── data/
-│   ├── Flight_price.csv
-│   └── Passenger_Satisfaction.csv
-│   └── flight_cleaned.csv
+│   ├── flight_cleaned.csv
 │   └── passenger_cleaned.csv
-│
-├── preprocessing/
-│   ├── flight_preprocessing.py
-│   └── satisfaction_preprocessing.py
-│
-├── training/
-│   ├── train_flight_mlflow.py
-│   └── train_satisfaction_mlflow.py
-│
-├── eda/
-│   ├── flight_eda.py
-│   ├── satisfaction_eda.py
-│   └── flight/
-│   └── customer/
 │
 ├── models/
 │   ├── flight/
-│   │   ├── LinearRegression_model.pkl
-│   │   ├── RandomForest_model.pkl
-│   │   ├── XGBoost_model.pkl
-│   │   └── flight_best_model.pkl
-│   │
 │   └── satisfaction/
-│       ├── LogisticRegression_model.pkl
-│       ├── DecisionTree_model.pkl
-│       ├── RandomForest_model.pkl
-│       ├── GradientBoosting_model.pkl
-│       ├── KNN_model.pkl
-│       ├── XGBoost_model.pkl
-│       └── satisfaction_best_model.pkl
 │
-├── artifacts/
-│   ├── flight/
-│   │   └── *.png   # confusion matrix / plots
-│   │
-│   └── satisfaction/
-│       └── *.png
-│
-├── mlruns_flight/                  # MLflow logs (flight)
-├── mlruns_satisfaction/            # MLflow logs (customer)
-│
-├── requirements.txt
-└── README.me
+├── preprocessing/
+├── training/
+├── eda/
+└── mlruns/
+```
+
+---
+
+## Installation
+
+```bash
+git clone <your-repo-link>
+cd project-folder
+pip install -r requirements.txt
+```
+
+---
+
+## Run the App
+
+```bash
+streamlit run app.py
+```
+
+---
+
+## Results
+
+* High accuracy achieved for both tasks
+* Robust preprocessing pipeline
+* Clean and interactive UI
+* Efficient model tracking using MLflow
+
+---
+
+## Business Use Cases
+
+* Helps travelers estimate flight costs
+* Assists airlines in pricing strategies
+* Improves customer experience analysis
+* Supports decision-making for customer retention
+
+---
+
+## Key Highlights
+
+* End-to-end ML project
+* Real-world dataset handling
+* MLflow experiment tracking
+* Interactive Streamlit deployment
+* Clean, modular, and scalable code
+
+---
+
+## Future Improvements
+
+* Deploy on cloud (Streamlit Cloud / Render)
+* Add real-time API integration
+* Hyperparameter tuning
+* Advanced visual dashboards
+
+---
 
 ## Project 1: Flight Price Prediction (Regression)
 
