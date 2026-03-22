@@ -8,6 +8,62 @@ This project involves two predictive models for the travel and customer experien
 Both models are deployed via a **Streamlit** application for interactive data analysis and predictions, integrated with **MLflow** for model tracking and management.
 
 ---
+## Project Structure
+
+flight_customer_project/
+│
+├── app.py                          # Main Streamlit app (both projects)
+├── flight.py                       # Streamlt app for flight_price
+├── customer.py                     # Streamlt app for passenger_satisfaction  
+│
+├── data/
+│   ├── Flight_price.csv
+│   └── Passenger_Satisfaction.csv
+│   └── flight_cleaned.csv
+│   └── passenger_cleaned.csv
+│
+├── preprocessing/
+│   ├── flight_preprocessing.py
+│   └── satisfaction_preprocessing.py
+│
+├── training/
+│   ├── train_flight_mlflow.py
+│   └── train_satisfaction_mlflow.py
+│
+├── eda/
+│   ├── flight_eda.py
+│   ├── satisfaction_eda.py
+│   └── flight/
+│   └── customer/
+│
+├── models/
+│   ├── flight/
+│   │   ├── LinearRegression_model.pkl
+│   │   ├── RandomForest_model.pkl
+│   │   ├── XGBoost_model.pkl
+│   │   └── flight_best_model.pkl
+│   │
+│   └── satisfaction/
+│       ├── LogisticRegression_model.pkl
+│       ├── DecisionTree_model.pkl
+│       ├── RandomForest_model.pkl
+│       ├── GradientBoosting_model.pkl
+│       ├── KNN_model.pkl
+│       ├── XGBoost_model.pkl
+│       └── satisfaction_best_model.pkl
+│
+├── artifacts/
+│   ├── flight/
+│   │   └── *.png   # confusion matrix / plots
+│   │
+│   └── satisfaction/
+│       └── *.png
+│
+├── mlruns_flight/                  # MLflow logs (flight)
+├── mlruns_satisfaction/            # MLflow logs (customer)
+│
+├── requirements.txt
+└── README.me
 
 ## Project 1: Flight Price Prediction (Regression)
 
