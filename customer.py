@@ -1,21 +1,22 @@
-# Customer.py
+# customer.py
 import streamlit as st
 import pandas as pd
 import joblib
 import os
 import matplotlib.pyplot as plt
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+@st.cache_resource
+def load_customer_model():
+    return joblib.load("models/satisfaction/satisfaction_best_model.pkl")
 
-model_path = os.path.join(BASE_DIR, "models", "satisfaction", "satisfaction_best_model.pkl")
-data_path = os.path.join(BASE_DIR, "data", "passenger_cleaned.csv")
+@st.cache_data
+def load_customer_data():
+    return pd.read_csv("data/passenger_cleaned.csv")
 
-model = joblib.load(model_path)
-df = pd.read_csv(data_path)
+st.header("Customer Satisfaction Prediction")
 
-st.title("Customer Satisfaction Prediction")
-
-st.header("Insights")
+model = load_customer_model()
+df = load_customer_data()
 
 col1, col2 = st.columns(2)
 
@@ -25,52 +26,44 @@ with col1:
 
 with col2:
     st.subheader("Class vs Satisfaction")
-    class_sat = pd.crosstab(df["Class"], df["satisfaction"])
-    st.bar_chart(class_sat)
+    st.bar_chart(pd.crosstab(df["Class"], df["satisfaction"]))
 
-st.subheader("Delay vs Satisfaction")
-delay_df = df.groupby("satisfaction")[[
-    "Departure Delay in Minutes",
-    "Arrival Delay in Minutes"
-]].mean()
+st.subheader("Enter Customer Details")
 
-st.bar_chart(delay_df)
+col1, col2, col3 = st.columns(3)
 
-# Sidebar inputs
-st.sidebar.header("Enter Customer Details")
- 
-gender = st.sidebar.selectbox("Gender", df["Gender"].unique())
-customer_type = st.sidebar.selectbox("Customer Type", df["Customer Type"].unique())
-travel_type = st.sidebar.selectbox("Type of Travel", df["Type of Travel"].unique())
-travel_class = st.sidebar.selectbox("Class", df["Class"].unique())
+with col1:
+    gender = st.selectbox("Gender", df["Gender"].unique())
+    customer_type = st.selectbox("Customer Type", df["Customer Type"].unique())
 
-age = st.sidebar.slider("Age", 5, 80, 25)
-flight_distance = st.sidebar.slider("Flight Distance", 100, 5000, 500)
+with col2:
+    travel_type = st.selectbox("Type of Travel", df["Type of Travel"].unique())
+    travel_class = st.selectbox("Class", df["Class"].unique())
 
-wifi = st.sidebar.slider("Inflight Wifi", 0, 5, 3)
-food = st.sidebar.slider("Food & Drink", 0, 5, 3)
-comfort = st.sidebar.slider("Seat Comfort", 0, 5, 3)
-cleanliness = st.sidebar.slider("Cleanliness", 0, 5, 3)
+with col3:
+    age = st.slider("Age", 5, 80, 25)
+    flight_distance = st.slider("Flight Distance", 100, 5000, 500)
 
-delay_dep = st.sidebar.slider("Departure Delay", 0, 300, 10)
-delay_arr = st.sidebar.slider("Arrival Delay", 0, 300, 5)
+wifi = st.slider("Inflight Wifi", 0, 5, 3)
+food = st.slider("Food & Drink", 0, 5, 3)
+comfort = st.slider("Seat Comfort", 0, 5, 3)
+cleanliness = st.slider("Cleanliness", 0, 5, 3)
+
+delay_dep = st.slider("Departure Delay", 0, 300, 10)
+delay_arr = st.slider("Arrival Delay", 0, 300, 5)
 
 total_service = wifi + food + comfort + cleanliness
+total_delay = delay_dep + delay_arr
 
-# Age group
-if age < 18:
-    age_group = "Teen"
-elif age < 30:
-    age_group = "Young Adult"
-elif age < 45:
-    age_group = "Adult"
-elif age < 60:
-    age_group = "Senior"
-else:
-    age_group = "Elder"
+age_group = (
+    "Teen" if age < 18 else
+    "Young Adult" if age < 30 else
+    "Adult" if age < 45 else
+    "Senior" if age < 60 else
+    "Elder"
+    )
 
-# Input data
-input_data = pd.DataFrame({
+input_df = pd.DataFrame({
     "Gender": [gender],
     "Customer Type": [customer_type],
     "Age": [age],
@@ -94,29 +87,21 @@ input_data = pd.DataFrame({
     "Departure Delay in Minutes": [delay_dep],
     "Arrival Delay in Minutes": [delay_arr],
     "Total_Service_Score": [total_service],
+    "Total_Delay": [total_delay],
     "Age_Group": [age_group]
-})
+    })
 
-# Predictions
 if st.button("Predict Satisfaction"):
-
-    prediction = model.predict(input_data)[0]
-
-    st.subheader("Prediction Results")
-
-    if prediction == 1:
-        st.success("Customer is Satisfied")
-    else:
-        st.error("Customer is Dissatisfied")
-
-    # Feature Importance
     try:
-        importances = model.named_steps["model"].feature_importances_
+        # FIX 2: Column alignment
+        input_df = input_df.reindex(columns=model.feature_names_in_, fill_value=0)
 
-        fig, ax = plt.subplots()
-        ax.barh(range(len(importances)), importances)
-        ax.set_title("Feature Importance")
+        prediction = model.predict(input_df)[0]
 
-        st.pyplot(fig)
-    except:
-        st.warning("Feature importance not available")
+        if prediction == 1:
+            st.success("Customer is Satisfied")
+        else:
+            st.error("Customer is Not Satisfied")
+
+    except Exception as e:
+        st.error("Prediction failed. Please check input values.")
