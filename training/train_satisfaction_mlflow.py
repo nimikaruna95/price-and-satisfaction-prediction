@@ -1,4 +1,4 @@
-# train_satisfaction_mlflow.py
+# satisfaction_mlflow.py
 import pandas as pd
 import mlflow
 import mlflow.sklearn
@@ -12,7 +12,17 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
+
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    confusion_matrix,
+    classification_report,
+    roc_auc_score
+)
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -21,43 +31,35 @@ from xgboost import XGBClassifier
 
 from mlflow.models.signature import infer_signature
 
-# Folder Creation
+# Folders
 MODEL_DIR = "models/satisfaction"
 ARTIFACT_DIR = "artifacts/satisfaction"
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
-# Setup for the MLFlow 
-mlflow.set_tracking_uri("file:./mlruns_satisfaction")
+# MLFLOW Setup
+mlflow.set_tracking_uri("file:./mlruns")
 mlflow.set_experiment("Customer_Satisfaction")
 
-# Loading the data
+# Load Data
 df = pd.read_csv("data/passenger_cleaned.csv")
 
-# Drop unwanted columns
-if "Unnamed: 0" in df.columns:
-    df.drop("Unnamed: 0", axis=1, inplace=True)
-
-# Feature Extraction
 X = df.drop("satisfaction", axis=1)
 
-# For the Encode target for XGBoost
 y = df["satisfaction"].map({
     "neutral or dissatisfied": 0,
     "satisfied": 1
 })
 
-print("Target values:", y.unique())
+# Fix schema warning
+num_cols = X.select_dtypes(exclude=["object"]).columns
+X[num_cols] = X[num_cols].astype("float64")
 
-# Column types
 categorical = X.select_dtypes(include="object").columns
 numerical = X.select_dtypes(exclude="object").columns
 
-# For MLflow schema safety , Convert integers to float type
-X[numerical] = X[numerical].astype("float64")
-
-# Preprocessing
+# Preprocessor
 preprocessor = ColumnTransformer([
     ("num", StandardScaler(), numerical),
     ("cat", OneHotEncoder(handle_unknown="ignore"), categorical)
@@ -66,106 +68,109 @@ preprocessor = ColumnTransformer([
 # Models
 models = {
     "LogisticRegression": LogisticRegression(max_iter=1000),
-    "DecisionTree": DecisionTreeClassifier(),
-    "RandomForest": RandomForestClassifier(),
-    "GradientBoosting": GradientBoostingClassifier(),
+    "DecisionTree": DecisionTreeClassifier(random_state=42),
+    "RandomForest": RandomForestClassifier(random_state=42),
+    "GradientBoosting": GradientBoostingClassifier(random_state=42),
     "KNN": KNeighborsClassifier(),
-    "XGBoost": XGBClassifier(eval_metric="logloss", use_label_encoder=False)
+    "XGBoost": XGBClassifier(eval_metric="logloss")
 }
 
-# Split Functions
+# Split function
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
 )
 
 best_acc = 0
+best_model_uri = None
+best_model_name = None
 best_model = None
-best_run_id = None
 
-# Training of loop
+# Training Loop
 for name, model in models.items():
 
-    print(f"\n Training: {name}")
-
-    with mlflow.start_run(run_name=name) as run:
+    with mlflow.start_run(run_name=name):
 
         pipeline = Pipeline([
             ("preprocessor", preprocessor),
             ("model", model)
         ])
 
-        # Cross-validation
-        scores = cross_val_score(
-            pipeline,
-            X_train,
-            y_train,
-            cv=5,
-            scoring="accuracy",
-            error_score='raise'   # For Debug Friendly
-        )
+        mlflow.log_param("model_name", name)
 
-        print(f"CV Accuracy: {scores.mean():.4f}")
+        # Cross Validation
+        cv = cross_val_score(pipeline, X_train, y_train, cv=5, scoring="accuracy")
+        mlflow.log_metric("cv_accuracy", cv.mean())
 
         # Train
         pipeline.fit(X_train, y_train)
-
-        # Predict
         preds = pipeline.predict(X_test)
 
         # Metrics
         acc = accuracy_score(y_test, preds)
-        f1 = f1_score(y_test, preds, average="weighted", zero_division=0)
-        precision = precision_score(y_test, preds, average="weighted", zero_division=0)
-        recall = recall_score(y_test, preds, average="weighted", zero_division=0)
+        f1 = f1_score(y_test, preds, average="weighted")
+        precision = precision_score(y_test, preds, average="weighted")
+        recall = recall_score(y_test, preds, average="weighted")
 
-        print(f"Test Accuracy: {acc:.4f}")
-
-        # Confusion matrix
-        cm = confusion_matrix(y_test, preds)
-
-        plt.figure()
-        sns.heatmap(cm, annot=True, fmt="d")
-        plt.title(f"{name} Confusion Matrix")
-
-        cm_path = f"{ARTIFACT_DIR}/{name}_cm.png"
-        plt.savefig(cm_path)
-        plt.close()
-
-        # MLFlow Logging
-        mlflow.log_param("model_name", name)
         mlflow.log_metric("accuracy", acc)
         mlflow.log_metric("f1_score", f1)
         mlflow.log_metric("precision", precision)
         mlflow.log_metric("recall", recall)
 
+        # ROC-AUC (only if probability available)
+        try:
+            probs = pipeline.predict_proba(X_test)[:, 1]
+            roc_auc = roc_auc_score(y_test, probs)
+            mlflow.log_metric("roc_auc", roc_auc)
+        except:
+            pass
+
+        # confusion matrix
+        cm = confusion_matrix(y_test, preds)
+
+        plt.figure()
+        sns.heatmap(cm, annot=True, fmt="d")
+        cm_path = f"{ARTIFACT_DIR}/{name}_cm.png"
+        plt.savefig(cm_path)
+        plt.close()
+
         mlflow.log_artifact(cm_path)
 
-        # Model signature
-        signature = infer_signature(X_train, pipeline.predict(X_train))
+        # classification Report
+        report = classification_report(y_test, preds)
 
-        mlflow.sklearn.log_model(
+        report_path = f"{ARTIFACT_DIR}/{name}_report.txt"
+        with open(report_path, "w") as f:
+            f.write(report)
+
+        mlflow.log_artifact(report_path)
+
+        # API (no warning)
+        logged = mlflow.sklearn.log_model(
             pipeline,
             name="model",
-            signature=signature
+            signature=infer_signature(X_train, pipeline.predict(X_train))
         )
 
-        # Saving in local path
-        model_path = f"{MODEL_DIR}/{name}_model.pkl"
-        joblib.dump(pipeline, model_path)
+        # Save locally
+        joblib.dump(pipeline, f"{MODEL_DIR}/{name}_model.pkl")
 
         # Best model tracking
         if acc > best_acc:
             best_acc = acc
             best_model = pipeline
-            best_run_id = run.info.run_id
+            best_model_name = name
+            best_model_uri = logged.model_uri
 
-# Saving Best Model
-best_model_path = f"{MODEL_DIR}/satisfaction_best_model.pkl"
-joblib.dump(best_model, best_model_path)
+# Saving best model
+joblib.dump(best_model, f"{MODEL_DIR}/satisfaction_best_model.pkl")
 
-print("\n Best model saved:", best_model_path)
+print(f"\nBest Model: {best_model_name}")
+print(f"Best Accuracy: {best_acc:.4f}")
 
-# REgister for the  model
-model_uri = f"runs:/{best_run_id}/model"
-mlflow.register_model(model_uri, "Satisfaction_Best_Model")
-print("\n satisfaction Training Completed")
+# Register model
+mlflow.register_model(best_model_uri, "Satisfaction_Best_Model")
+
+print("Satisfaction training complete")
