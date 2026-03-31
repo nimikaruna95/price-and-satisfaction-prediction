@@ -8,6 +8,9 @@ def preprocess_flight_data(input_path, output_path):
     df.drop_duplicates(inplace=True)
     df.dropna(inplace=True)
 
+    # Route Features
+    df["Route"] = df["Route"].str.replace("?", "→", regex=False)
+
     # Date Features
     df["Date_of_Journey"] = pd.to_datetime(df["Date_of_Journey"], format="%d/%m/%Y")
     df["Journey_Day"] = df["Date_of_Journey"].dt.day
@@ -58,8 +61,7 @@ def preprocess_flight_data(input_path, output_path):
         "Dep_Time",
         "Arrival_Time",
         "Duration",
-        "Total_Stops",
-        "Route" 
+        "Total_Stops", 
     ], inplace=True)
 
     df.to_csv(output_path, index=False)
@@ -68,4 +70,6 @@ def preprocess_flight_data(input_path, output_path):
 if __name__ == "__main__":
     preprocess_flight_data("data/Flight_Price.csv", "data/flight_cleaned.csv")
     print("flight preprocessing completed successfully.")
-    
+
+
+
